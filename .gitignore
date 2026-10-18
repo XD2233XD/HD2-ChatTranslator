@@ -1,0 +1,28 @@
+# private signing key - never commit
+keys/hd2ct_ed25519
+
+# build outputs
+console/build/
+console/dist/
+mod/dist/
+__pycache__/
+*.pyc
+
+# local-only
+*.lnk
+CLAUDE.md
+console/data/
+release/smoke*/
+release/HD2ChatTranslator-*/data/
+portable-test/
+
+# downloaded research copies / local screenshots (not source)
+调研/
+docs/screenshots/
+
+# release artifacts are built, not source (keep the recipe)
+release/HD2ChatTranslator-*/
+release/*.zip
+release/*.sig
+release/hd2ct_ed25519.pub
+release/SHA256SUMS.txt

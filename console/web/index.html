@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="XD2233XD">
+<meta name="hd2ct-watermark" content="HD2CT-XD2233XD-9c04daa02b4d4d67">
+<title>HD2 Chat Translator · 操作台</title>
+<link rel="stylesheet" href="/web/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">HD2</div>
+    <div>
+      <h1>Chat Translator</h1>
+      <p>绝地潜兵 2 · 聊天翻译操作台</p>
+    </div>
+  </div>
+  <div class="pills">
+    <span class="pill" id="pill-service"><i></i>翻译服务</span>
+    <span class="pill" id="pill-game"><i></i>游戏</span>
+    <span class="pill" id="pill-mod"><i></i>Mod</span>
+    <span class="pill ghost" id="pill-port">127.0.0.1</span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button data-tab="overview" class="active">概览</button>
+  <button data-tab="settings">设置</button>
+  <button data-tab="glossary">术语表</button>
+  <button data-tab="history">翻译记录</button>
+  <button data-tab="logs">日志</button>
+  <button data-tab="install">安装 / 诊断</button>
+</nav>
+
+<main>
+  <!-- 概览 -->
+  <section id="tab-overview" class="tab active">
+    <div class="cards">
+      <div class="card"><span>今日翻译</span><strong id="stat-today">–</strong><small id="stat-total"></small></div>
+      <div class="card"><span>今日成功</span><strong id="stat-ok">–</strong><small>含跳过同语言</small></div>
+      <div class="card"><span>平均延迟</span><strong id="stat-latency">–</strong><small>DeepSeek 往返</small></div>
+      <div class="card"><span>语言对</span><strong id="stat-pair">–</strong><small>入站 / 出站</small></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>快速测试</h2>
+        <p class="muted">在本机直接跑一次完整翻译，不经过游戏。</p>
+        <textarea id="test-input" rows="3" placeholder="输入一句英文，例如：Bug breach at my position, need backup!"></textarea>
+        <div class="row">
+          <select id="test-target"></select>
+          <button class="primary" id="btn-test">翻译</button>
+        </div>
+        <div id="test-result" class="result hidden"></div>
+      </div>
+
+      <div class="panel">
+        <h2>最近翻译</h2>
+        <div class="table-wrap short">
+          <table>
+            <thead><tr><th>时间</th><th>方向</th><th>原文</th><th>译文</th><th>ms</th></tr></thead>
+            <tbody id="recent-body"><tr><td colspan="5" class="muted">暂无记录</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>控制台发言 <span class="muted">（推荐：绕开游戏的中文输入法 bug）</span></h2>
+      <p class="muted">在这里用中文输入法正常打字。点发送后：控制台先翻译，再把结果交给游戏内 mod，由 mod 写进聊天框并让游戏自己发出去——不用在游戏里碰中文输入法。<b>需要已经在飞船或任务里</b>（标题界面发不出去）。</p>
+      <textarea id="say-input" rows="2" placeholder="例如：前方有敌人，需要支援"></textarea>
+      <div class="row">
+        <select id="say-target"></select>
+        <label class="check"><input type="checkbox" id="say-force"> 已是目标语言也原样发送</label>
+        <button class="primary" id="btn-say">翻译并发送到游戏</button>
+      </div>
+      <div id="say-result" class="result hidden"></div>
+    </div>
+  </section>
+  <section id="tab-settings" class="tab">
+    <div class="grid2">
+      <div class="panel">
+        <h2>语言</h2>
+        <label>阅读语言（别人说的话翻成）<select id="read-language"></select></label>
+        <label>发送语言（自己说的话翻成）<select id="send-language"></select></label>
+        <label>入站标注方式
+          <select id="tag-mode">
+            <option value="source">[EN] 只标源语言（推荐）</option>
+            <option value="arrow">[EN→CN] 源语言→目标语言</option>
+            <option value="target">[CN] 只标目标语言</option>
+            <option value="off">不标注</option>
+          </select>
+        </label>
+        <div class="row">
+          <label class="check"><input type="checkbox" id="inbound"> 翻译入站（队友消息）</label>
+          <label class="check"><input type="checkbox" id="outbound"> 翻译出站（自动补发译文）</label>
+        </div>
+        <label>入站显示方式
+          <select id="inbound-render">
+            <option value="line">单独一条本地消息（推荐，布局最稳）</option>
+            <option value="row">写回原行下面（第二行会从名字下面开始）</option>
+          </select>
+        </label>
+        <label>出站前缀
+          <input id="prefix" placeholder="auto = [EN] / [CN]；也可填固定前缀">
+        </label>
+        <label class="check"><input type="checkbox" id="ime-guard"> 输入法守护（游戏在前台时自动把 IME 切到英文模式）</label>
+      </div>
+
+      <div class="panel">
+        <h2>系统消息过滤</h2>
+        <p class="muted">系统消息不会送去翻译。发送者名字与下面的名单完全匹配时跳过；前缀用于兜底。</p>
+        <label>系统发送者名字（每行一个）
+          <textarea id="system-names" rows="5" placeholder="SYSTEM&#10;系统"></textarea>
+        </label>
+        <label>系统消息前缀（每行一个）
+          <textarea id="system-prefixes" rows="4" placeholder="已加入小队&#10;has joined"></textarea>
+        </label>
+        <label class="check"><input type="checkbox" id="chat-log"> 调试：把每一条聊天原始行写进日志</label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>翻译服务</h2>
+      <div class="grid3">
+        <label>接口地址<input id="api-base" placeholder="https://api.deepseek.com/v1"></label>
+        <label>模型<input id="api-model" placeholder="deepseek-chat"></label>
+        <label>API Key<input id="api-key" type="password" placeholder="留空 = 不修改"></label>
+      </div>
+      <p class="muted" id="api-hint"></p>
+      <div class="row end">
+        <button class="ghost" id="btn-reload">放弃修改</button>
+        <button class="primary" id="btn-save">保存并生效</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 术语表 -->
+  <section id="tab-glossary" class="tab">
+    <div class="panel">
+      <h2>术语表</h2>
+      <p class="muted">术语命中时会写进翻译提示词，保证战备、敌人、武器名一致。源语言术语 → 目标语言术语。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:42%">原文术语</th><th style="width:42%">译名</th><th></th></tr></thead>
+          <tbody id="glossary-body"></tbody>
+        </table>
+      </div>
+      <div class="row">
+        <input id="glossary-src" placeholder="例如：Stratagem">
+        <input id="glossary-dst" placeholder="例如：战备">
+        <button class="ghost" id="btn-glossary-add">添加</button>
+      </div>
+      <div class="row end">
+        <button class="primary" id="btn-glossary-save">保存术语表</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 历史 -->
+  <section id="tab-history" class="tab">
+    <div class="panel">
+      <div class="row">
+        <h2>翻译记录</h2>
+        <span class="spacer"></span>
+        <select id="history-direction">
+          <option value="">全部</option>
+          <option value="in">入站</option>
+          <option value="out">出站</option>
+        </select>
+        <button class="ghost" id="btn-history-refresh">刷新</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>时间</th><th>方向</th><th>发送者</th><th>源语言</th><th>原文</th><th>译文</th><th>ms</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 日志 -->
+  <section id="tab-logs" class="tab">
+    <div class="panel">
+      <div class="row">
+        <h2>日志</h2>
+        <span class="spacer"></span>
+        <select id="log-source">
+          <option value="mod">游戏内 Mod 日志</option>
+          <option value="console">控制台日志</option>
+        </select>
+        <button class="ghost" id="btn-log-refresh">刷新</button>
+      </div>
+      <pre id="log-view" class="log">（空）</pre>
+    </div>
+  </section>
+
+  <!-- 安装 -->
+  <section id="tab-install" class="tab">
+    <div class="grid2">
+      <div class="panel">
+        <h2>环境检查</h2>
+        <dl class="status-list" id="install-status"></dl>
+        <div class="row">
+          <button class="ghost" data-open="game">打开游戏目录</button>
+          <button class="ghost" data-open="arsenal_mods">打开 Arsenal mods</button>
+          <button class="ghost" data-open="logs">打开日志目录</button>
+          <button class="ghost" data-open="zip_dir">打开安装包目录</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>首次安装步骤</h2>
+        <ol class="steps">
+          <li>安装 <b>HD2 Arsenal</b>（mod 管理器）与 <b>Bingus Shared Loader</b>（Lua 加载器，必须）。</li>
+          <li>把 <code>HD2ChatTranslator-0.1.0.zip</code> 拖进 Arsenal 导入，启用后点 <b>Deploy</b>。</li>
+          <li>先启动本控制台，再启动游戏；日志出现 <code>ARMED</code> 即加载成功。</li>
+          <li>进游戏发一句中文，约 1 秒后应出现 <code>[EN] ...</code> 的第二条消息。</li>
+        </ol>
+        <div class="row">
+          <button class="primary" id="btn-prepare">准备安装包</button>
+          <button class="primary" id="btn-manual-install">一键部署到游戏</button>
+          <button class="ghost" id="btn-manual-uninstall">卸载</button>
+          <button class="ghost" id="btn-open-bingus">下载 Bingus</button>
+          <button class="ghost" id="btn-open-arsenal">下载 Arsenal</button>
+          <button class="ghost" id="btn-borderless">改无边框窗口（需退出游戏）</button>
+        </div>
+        <pre id="install-output" class="log hidden"></pre>
+        <p class="muted">部署前请完全退出游戏。手动部署写 <code>data\9ba626afa44a3aa3.patch_1</code>（本 mod）与 <code>patch_2</code>（Bingus），不碰语言包 patch_0，卸载会精确删除这两份。</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+<footer class="credit" id="credit">HD2 Chat Translator · MIT</footer>
+<script src="/web/app.js"></script>
+</body>
+</html>
